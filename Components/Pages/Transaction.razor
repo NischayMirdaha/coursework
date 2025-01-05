@@ -1,0 +1,122 @@
+@page "/transaction"
+@using coursework.Models
+@inject TransactionService TransactionService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<section class="bg-gradient-primary">
+    <div class="d-flex justify-content-center align-items-center min-vh-100">
+        <div class="card shadow-lg border-0 p-5" style="width: 450px; background: #ffffff; border-radius: 20px;">
+            <h2 class="text-center text-primary mb-4 font-weight-bold">Add Your Transaction</h2>
+
+            <form @onsubmit="HandleSaveTransaction">
+                <div class="mb-3">
+                    <input type="number" class="form-control shadow-sm" placeholder="Amount" style="font-weight: 500; padding: 15px; border-radius: 12px;" @bind="Amount" required min="0" step="any">
+                </div>
+                <div class="mb-3">
+                    <select class="form-select shadow-sm" @bind="TransactionCategory" required style="font-weight: 500; padding: 15px; border-radius: 12px;">
+                        <option disabled value="">Select Transaction Type</option>
+                        <option value="Inflow">Credit (Inflow)</option>
+                        <option value="Outflow">Debit (Outflow)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <select class="form-select shadow-sm" @bind="TransactionMethod" style="font-weight: 500; padding: 15px; border-radius: 12px;">
+                        <option disabled value="">Select Source</option>
+                        <option value="cash">Cash</option>
+                        <option value="online">Online</option>
+                        <option value="loan">Loan</option>
+                        <option value="gift">Gift</option>
+                        <option value="bonus">Bonus</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <select class="form-select shadow-sm" @bind="SelectedTags" required style="font-weight: 500; padding: 15px; border-radius: 12px;">
+                        <option disabled value="">Select Tags</option>
+                        <option value="yearly">Yearly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="drinks">Drinks</option>
+                        <option value="clothes">Clothes</option>
+                        <option value="gadgets">Gadgets</option>
+                        <option value="miscellaneous">Miscellaneous</option>
+                        <option value="fuel">Fuel</option>
+                        <option value="rent">Rent</option>
+                        <option value="emi">EMI</option>
+                        <option value="party">Party</option>
+                    </select>
+                    <small class="text-muted">Choose custom tags</small>
+                </div>
+
+                @if (SelectedTags == "other")
+                {
+                    <div class="mb-3">
+                        <input type="text" class="form-control shadow-sm" placeholder="Add Custom Tags" style="font-weight: 300; padding: 15px; border-radius: 12px;" @bind="CustomTagInput" />
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <textarea class="form-control shadow-sm" rows="4" placeholder="Notes" style="font-weight: 300; padding: 15px; border-radius: 12px;" @bind="TransactionNotes"></textarea>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-lg w-45" style="background: #5f2eea; color: white; border-radius: 25px; padding: 12px 25px; font-weight: 500; transition: all 0.3s ease-in-out;">Save</button>
+                    <button type="button" class="btn btn-lg w-45" style="background: #c0392b; color: white; border-radius: 25px; padding: 12px 25px; font-weight: 500; transition: all 0.3s ease-in-out;" @onclick="CancelTransaction">Cancel</button>
+                </div>
+            </form>
+
+            @if (!string.IsNullOrEmpty(StatusMessage))
+            {
+                <p class="text-center text-muted mt-4">@StatusMessage</p>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    private decimal Amount = 0;
+    private string TransactionCategory = "Inflow";
+    private string TransactionMethod = "";
+    private string SelectedTags = "";
+    private string CustomTagInput = "";
+    private string TransactionNotes = "";
+    private string StatusMessage = "";
+    private decimal CurrentBalance = 1000; // Example initial balance
+
+    private async Task HandleSaveTransaction()
+    {
+        // Combine predefined and custom tags
+        var allTags = SelectedTags.Split(',').ToList();
+        if (!string.IsNullOrEmpty(CustomTagInput))
+        {
+            allTags.AddRange(CustomTagInput.Split(',').Select(tag => tag.Trim()));
+        }
+
+        // Create a new transaction
+        var newTransaction = new TransactionModel
+            {
+                Amount = Amount,
+                Type = Enum.Parse<TransactionModel.TransactionType>(TransactionCategory),
+                Tags = allTags.Distinct().ToList(),
+                Source = TransactionMethod.Split(',').ToList(),
+                Notes = TransactionNotes,
+                Date = DateTime.Now
+            };
+
+        // Attempt to process the transaction using the service
+        var success = TransactionService.ProcessTransaction(newTransaction, ref CurrentBalance);
+
+        if (success)
+        {
+            StatusMessage = "Transaction has been successfully ";
+        }
+        else
+        {
+            StatusMessage = "Insufficient balance for this transaction.";
+        }
+    }
+
+    private void CancelTransaction()
+    {
+        NavigationManager.NavigateTo("/home");
+    }
+}

@@ -1,0 +1,126 @@
+﻿@page "/debt"
+@using coursework.Models
+@using coursework.Services
+@inject DebtService DebtService
+@inject NavigationManager NavigationManager
+
+<section class="bg-dark text-light">
+    <div class="d-flex justify-content-center align-items-center min-vh-100">
+        <div class="card shadow-sm border-0 p-4" style="width: 400px; background-color: #2c3e50; border-radius: 16px;">
+            <h2 class="text-center mb-4" style="color: #1abc9c;">Add New Debt Record</h2>
+            <form @onsubmit="HandleSaveDebt">
+                <div class="mb-3">
+                    <label for="TotalDebt" class="form-label">Total Debt Amount</label>
+                    <input type="number" class="form-control" placeholder="Enter Total Debt" @bind="TotalDebtAmount" required min="0" step="0.01" id="TotalDebt" style="background-color: #34495e; color: white;">
+                </div>
+
+                <div class="mb-3">
+                    <label for="AmountPaid" class="form-label">Amount Paid</label>
+                    <input type="number" class="form-control" placeholder="Enter Paid Amount" @bind="AmountPaid" min="0" step="0.01" id="AmountPaid" style="background-color: #34495e; color: white;">
+                </div>
+
+                <div class="mb-3">
+                    <label for="DebtOrigin" class="form-label">Debt Origin</label>
+                    <select class="form-select" @bind="DebtOrigin" id="DebtOrigin" required style="background-color: #34495e; color: white;">
+                        <option disabled value="">Select Origin</option>
+                        <option value="bank">Bank</option>
+                        <option value="cash">Cash</option>
+                        <option value="online">Online</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="loan">Loan</option>
+                        <option value="gift">Gift</option>
+                        <option value="bonus">Bonus</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="RepaymentDate" class="form-label">Repayment Due Date</label>
+                    <input type="date" class="form-control" @bind="RepaymentDueDate" required id="RepaymentDate" style="background-color: #34495e; color: white;">
+                </div>
+
+                <div class="mb-3">
+                    <label for="Notes" class="form-label">Additional Notes</label>
+                    <textarea class="form-control" rows="3" placeholder="Enter any notes about this debt" @bind="AdditionalNotes" id="Notes" style="background-color: #34495e; color: white;"></textarea>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn w-45" style="background-color: #1abc9c; color: white;">Save Debt</button>
+                    <button type="button" class="btn w-45" style="background-color: #e74c3c; color: white;" @onclick="HandleCancel">Cancel</button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(UserMessage))
+                {
+                    <p class="text-center mt-3 @(UserMessage.Contains("success") ? "text-success" : "text-danger")">@UserMessage</p>
+                }
+
+                @if (IsProcessing)
+                {
+                    <p class="text-center">Saving...</p>
+                }
+            </form>
+        </div>
+    </div>
+</section>
+
+@code {
+    private decimal TotalDebtAmount;
+    private decimal AmountPaid;
+    private string DebtOrigin = "";
+    private DateTime RepaymentDueDate = DateTime.Now;
+    private string AdditionalNotes = "";
+    private string UserMessage = "";
+    private bool IsProcessing = false;
+
+    private async Task HandleSaveDebt()
+    {
+        try
+        {
+            IsProcessing = true;
+            if (TotalDebtAmount <= 0)
+            {
+                UserMessage = "Debt amount must be greater than zero.";
+                return;
+            }
+
+            var debtRecord = new DebtModel
+                {
+                    Id = 0,  // ID will be auto-assigned
+                    Amount = TotalDebtAmount,
+                    PaidAmount = AmountPaid,
+                    Source = DebtOrigin,
+                    DueDate = RepaymentDueDate,
+                    Notes = AdditionalNotes,
+                    Date = DateTime.Now,
+                    IsCleared = false,
+                    ClearedDate = null
+                };
+
+            DebtService.AddDebt(debtRecord);
+            UserMessage = "Debt record saved successfully!";
+            ResetForm();
+        }
+        catch (Exception ex)
+        {
+            UserMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private void HandleCancel()
+    {
+        NavigationManager.NavigateTo("/home");
+    }
+
+    private void ResetForm()
+    {
+        TotalDebtAmount = 0;
+        AmountPaid = 0;
+        DebtOrigin = "";
+        RepaymentDueDate = DateTime.Now;
+        AdditionalNotes = "";
+    }
+}

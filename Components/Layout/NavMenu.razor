@@ -1,27 +1,19 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">coursework</a>
-    </div>
-</div>
+﻿<div class="col-md-3 sidebar">
+    <h3>Dashboard</h3>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <NavLink href="/dashboard" class="nav-link" Match="NavLinkMatch.All">Home</NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink href="/transaction" class="nav-link">Add Transaction</NavLink>
+        </li>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+        <li class="nav-item">
+            <NavLink href="/debt" class="nav-link">Add Debt</NavLink>
+        </li>
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
+        <li class="nav-item">
+            <button class="btn btn-danger w-100">Logout</button>
+        </li>
+    </ul>
 </div>

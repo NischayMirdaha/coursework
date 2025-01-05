@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using coursework.Services;
+using Microsoft.Extensions.Logging;
 
 namespace coursework
 {
@@ -20,6 +21,10 @@ namespace coursework
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
+            builder.Services.AddSingleton<UserService>();
+            builder.Services.AddScoped<TransactionService>();
+            builder.Services.AddScoped<DebtService>();
+
 
             return builder.Build();
         }
