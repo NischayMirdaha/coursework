@@ -1,19 +1,118 @@
-﻿<div class="col-md-3 sidebar">
-    <h3>Dashboard</h3>
-    <ul class="nav flex-column">
-        <li class="nav-item">
-            <NavLink href="/dashboard" class="nav-link" Match="NavLinkMatch.All">Home</NavLink>
-        </li>
-        <li class="nav-item">
-            <NavLink href="/transaction" class="nav-link">Add Transaction</NavLink>
-        </li>
-
-        <li class="nav-item">
-            <NavLink href="/debt" class="nav-link">Add Debt</NavLink>
-        </li>
-
-        <li class="nav-item">
-            <button class="btn btn-danger w-100">Logout</button>
-        </li>
-    </ul>
+﻿<div class="d-flex vh-100">
+    <!-- Sidebar -->
+    <div class="sidebar p-3">
+        <!-- Logo -->
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-white">Expense Mate</h2>
+        </div>
+        <!-- Navigation Links -->
+        <nav class="nav flex-column mt-4">
+            <a href="/dashboard" class="nav-link text-light active d-flex align-items-center">
+                <i class="bi bi-house-door-fill me-3"></i><span>Dashboard</span>
+            </a>
+            <a href="/transaction" class="nav-link text-light d-flex align-items-center">
+                <i class="bi bi-currency-exchange me-3"></i><span>Transactions</span>
+            </a>
+            <hr class="text-light">
+            <a href="/debt" class="nav-link text-light d-flex align-items-center">
+                <i class="bi bi-bank2 me-3"></i><span>Debts</span>
+            </a>
+            <a href="/transactionDetails" class="nav-link text-light d-flex align-items-center">
+                <i class="bi bi-card-list me-3"></i><span>Transaction Details</span>
+            </a>
+            <a href="/debtDetails" class="nav-link text-light d-flex align-items-center">
+                <i class="bi bi-card-list me-3"></i><span>Debt Details</span>
+            </a>
+        </nav>
+    </div>
 </div>
+
+<style>
+    /* Sidebar Styling */
+    .sidebar {
+        width: 280px;
+        background: #f3f4fa
+        border-right: 3px solid #003366;
+        border-radius: 10px;
+    
+        padding-top: 40px;
+        transition: all 0.3s ease-in-out;
+        position: relative;
+    }
+
+        /* Hover Expand and Shadow Effect */
+        .sidebar:hover {
+            width: 320px;
+            box-shadow: 10px 0 40px rgba(0, 0, 0, 0.4);
+        }
+
+    /* Navigation Link Styling */
+    .nav-link {
+        padding: 15px 25px;
+        margin: 15px 0;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease-in-out;
+    }
+
+        /* Hover Effect for Links */
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding-left: 35px;
+            transform: translateX(10px);
+        }
+
+        /* Active Link Styling */
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+    /* Icon Styling */
+    .bi {
+        font-size: 1.6rem;
+        color: #ffffff;
+        margin-right: 20px;
+        transition: all 0.3s ease;
+    }
+
+    /* Hover Effect for Icons */
+    .nav-link:hover .bi {
+        transform: rotate(15deg) scale(1.1); /* Rotate and scale the icon on hover */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Sidebar Divider Styling */
+    hr {
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+        margin: 20px 0;
+    }
+
+    /* Logo Styling */
+    .sidebar .text-center h2 {
+        font-family: 'Roboto', sans-serif;
+        letter-spacing: 3px;
+        color: #ffffff;
+    }
+
+    /* Responsive Design for Smaller Screens */
+    @code {
+        }
+
+    {
+        width: 220px; /* Narrow sidebar on mobile */
+    }
+
+    .sidebar:hover {
+        width: 250px;
+    }
+
+    }</style>
+
+<!-- Add Bootstrap Icons library in your HTML -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css">

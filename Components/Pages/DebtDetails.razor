@@ -1,0 +1,118 @@
+﻿@page "/debtDetails"
+@using coursework.Models
+@inject DebtService DebtService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+<section class="min-h-screen bg-gray-100 p-8">
+    <div class="max-w-7xl mx-auto">
+        <h2 class="text-center text-4xl font-bold mb-8 text-gray-800">
+            User Debts
+        </h2>
+
+        <!-- Debt Details Table -->
+        <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+            @if (Debts.Any())
+            {
+                <table class="min-w-full table-auto">
+                    <thead class="bg-gray-50">
+                        <tr class="text-left text-sm font-semibold text-gray-500 uppercase">
+                            <th class="px-6 py-3">Amount</th>
+                            <th class="px-6 py-3">Paid Amount</th>
+                            <th class="px-6 py-3">Source</th>
+                            <th class="px-6 py-3">Notes</th>
+                            <th class="px-6 py-3">Cleared</th>
+                            <th class="px-6 py-3">Created Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var debt in Debts)
+                        {
+                            <tr class="hover:bg-gray-100 transition-all">
+                                <td class="px-6 py-4 text-sm text-gray-700">@debt.Amount.ToString("C")</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">@debt.PaidAmount.ToString("C")</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">@debt.Source</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">@debt.Notes</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">@((debt.IsCleared ? "Yes" : "No"))</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">@debt.Date.ToString("MM/dd/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="text-center text-sm text-gray-500">No debts found.</p>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    private List<DebtModel> Debts = new();
+
+    protected override void OnInitialized()
+    {
+        // Load all debts from the DebtService
+        Debts = DebtService.GetAllDebts();
+    }
+}
+
+<style>
+    /* General Layout Styling */
+    body {
+        font-family: 'Arial', sans-serif;
+    }
+
+    section {
+        background-color: #f9fafb;
+        padding: 2rem;
+    }
+
+    /* Table Styling */
+    .min-w-full {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 0.75rem 1.5rem;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f3f4f6;
+        font-weight: 600;
+    }
+
+    tr:hover td {
+        background-color: cornflowerblue;
+    }
+
+    /* Hover Effects */
+    tr:hover {
+        background-color: #f3f4f6;
+        transition: background-color 0.3s ease;
+    }
+
+    /* Button Styling */
+    button {
+        transition: all 0.3s ease;
+        background-color: darkturquoise;
+        padding: 0.75rem 1.5rem;
+        color: white;
+        border-radius: 6px;
+    }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: cornflowerblue;
+        }
+
+    /* Gradient Text for Heading */
+    .text-gradient {
+        background: linear-gradient(to right, #63b3ed, #3182ce);
+        -webkit-background-clip: text;
+        color: transparent;
+    }
+</style>

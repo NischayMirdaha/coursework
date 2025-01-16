@@ -1,122 +1,150 @@
-@page "/transaction"
+﻿@page "/transaction"
 @using coursework.Models
 @inject TransactionService TransactionService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+<section class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-blue-500 d-flex align-items-center justify-content-center p-4">
+    <div class="w-100 max-w-4xl bg-white rounded-xl shadow-lg p-8">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="display-4 fw-bold text-primary">Add Your Transaction</h1>
+            <p class="text-secondary fs-6 mt-2">Enter the details below to save a new transaction.</p>
+        </div>
 
-<section class="bg-gradient-primary">
-    <div class="d-flex justify-content-center align-items-center min-vh-100">
-        <div class="card shadow-lg border-0 p-5" style="width: 450px; background: #ffffff; border-radius: 20px;">
-            <h2 class="text-center text-primary mb-4 font-weight-bold">Add Your Transaction</h2>
-
-            <form @onsubmit="HandleSaveTransaction">
+        <!-- Form Container -->
+        <div class="border rounded bg-light p-4">
+            <form @onsubmit="OnSaveTransaction">
+                <!-- Form Fields -->
+                <!-- Amount -->
                 <div class="mb-3">
-                    <input type="number" class="form-control shadow-sm" placeholder="Amount" style="font-weight: 500; padding: 15px; border-radius: 12px;" @bind="Amount" required min="0" step="any">
+                    <label class="form-label text-primary">Amount</label>
+                    <input type="number" class="form-control" placeholder="Enter amount" @bind="newTransactionAmount" required min="0" step="any">
                 </div>
+
+                <!-- Title -->
                 <div class="mb-3">
-                    <select class="form-select shadow-sm" @bind="TransactionCategory" required style="font-weight: 500; padding: 15px; border-radius: 12px;">
-                        <option disabled value="">Select Transaction Type</option>
-                        <option value="Inflow">Credit (Inflow)</option>
-                        <option value="Outflow">Debit (Outflow)</option>
+                    <label class="form-label text-primary">Title</label>
+                    <input type="text" class="form-control" placeholder="Transaction title" required>
+                </div>
+
+                <!-- Transaction Type -->
+                <div class="mb-3">
+                    <label class="form-label text-primary">Transaction Type</label>
+                    <select class="form-select" @bind="newTransactionType" required>
+                        <option disabled selected value="">Select Transaction Type</option>
+                        <option value="Credit">Credit</option>
+                        <option value="Debit">Debit</option>
                     </select>
                 </div>
+
+                <!-- Source -->
                 <div class="mb-3">
-                    <select class="form-select shadow-sm" @bind="TransactionMethod" style="font-weight: 500; padding: 15px; border-radius: 12px;">
-                        <option disabled value="">Select Source</option>
+                    <label class="form-label text-primary">Source</label>
+                    <select class="form-select" @bind="newTransactionSource">
+                        <option disabled selected value="">Select Source</option>
+                        <option value="bank">Bank</option>
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
-                        <option value="loan">Loan</option>
-                        <option value="gift">Gift</option>
                         <option value="bonus">Bonus</option>
                         <option value="other">Other</option>
                     </select>
                 </div>
+
+                <!-- Tags -->
                 <div class="mb-3">
-                    <select class="form-select shadow-sm" @bind="SelectedTags" required style="font-weight: 500; padding: 15px; border-radius: 12px;">
-                        <option disabled value="">Select Tags</option>
+                    <label class="form-label text-primary">Tags</label>
+                    <select class="form-select" @bind="newTransactionTags" required>
+                        <option disabled selected value="">Select Tags</option>
                         <option value="yearly">Yearly</option>
                         <option value="monthly">Monthly</option>
+                        <option value="food">Food</option>
                         <option value="drinks">Drinks</option>
-                        <option value="clothes">Clothes</option>
-                        <option value="gadgets">Gadgets</option>
-                        <option value="miscellaneous">Miscellaneous</option>
-                        <option value="fuel">Fuel</option>
-                        <option value="rent">Rent</option>
-                        <option value="emi">EMI</option>
-                        <option value="party">Party</option>
+                        <option value="other">Other</option>
                     </select>
-                    <small class="text-muted">Choose custom tags</small>
                 </div>
 
-                @if (SelectedTags == "other")
-                {
-                    <div class="mb-3">
-                        <input type="text" class="form-control shadow-sm" placeholder="Add Custom Tags" style="font-weight: 300; padding: 15px; border-radius: 12px;" @bind="CustomTagInput" />
-                    </div>
-                }
-
+                <!-- Notes -->
                 <div class="mb-3">
-                    <textarea class="form-control shadow-sm" rows="4" placeholder="Notes" style="font-weight: 300; padding: 15px; border-radius: 12px;" @bind="TransactionNotes"></textarea>
+                    <label class="form-label text-primary">Notes</label>
+                    <textarea class="form-control" rows="3" placeholder="Add any notes" @bind="newTransactionNotes"></textarea>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <button type="submit" class="btn btn-lg w-45" style="background: #5f2eea; color: white; border-radius: 25px; padding: 12px 25px; font-weight: 500; transition: all 0.3s ease-in-out;">Save</button>
-                    <button type="button" class="btn btn-lg w-45" style="background: #c0392b; color: white; border-radius: 25px; padding: 12px 25px; font-weight: 500; transition: all 0.3s ease-in-out;" @onclick="CancelTransaction">Cancel</button>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">Save Transaction</button>
+                    <button type="button" class="btn btn-danger px-4 py-2 fw-semibold" @onclick="OnCancel">Cancel</button>
                 </div>
             </form>
-
-            @if (!string.IsNullOrEmpty(StatusMessage))
-            {
-                <p class="text-center text-muted mt-4">@StatusMessage</p>
-            }
         </div>
+
+        <!-- Success Message -->
+        @if (!string.IsNullOrEmpty(Message))
+        {
+            <div class="mt-4 alert alert-success rounded shadow-sm" role="alert">
+                <p class="m-0">@Message</p>
+            </div>
+        }
     </div>
 </section>
 
-@code {
-    private decimal Amount = 0;
-    private string TransactionCategory = "Inflow";
-    private string TransactionMethod = "";
-    private string SelectedTags = "";
-    private string CustomTagInput = "";
-    private string TransactionNotes = "";
-    private string StatusMessage = "";
-    private decimal CurrentBalance = 1000; // Example initial balance
 
-    private async Task HandleSaveTransaction()
+
+@code {
+    private decimal newTransactionAmount = 0;
+    private string newTransactionType = "";
+    private string newTransactionTitle = "";
+    private string newTransactionTags = "";
+    private string newTransactionSource = "";
+    private string newTransactionNotes = "";
+    private string Message = "";
+    private List<TransactionModel> Transactions = new();
+
+    protected override void OnInitialized()
     {
-        // Combine predefined and custom tags
-        var allTags = SelectedTags.Split(',').ToList();
-        if (!string.IsNullOrEmpty(CustomTagInput))
+        var appData = TransactionService.LoadAppData();
+        Transactions = appData.Transactions ?? new List<TransactionModel>();
+    }
+
+    private async Task OnSaveTransaction()
+    {
+        var userId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userId");
+        if (string.IsNullOrEmpty(userId))
         {
-            allTags.AddRange(CustomTagInput.Split(',').Select(tag => tag.Trim()));
+            Message = "User ID not found. Please log in.";
+            return;
         }
 
-        // Create a new transaction
+        int parsedUserId = int.Parse(userId);
+
+        if (newTransactionType == "Debit" && !TransactionService.CheckSufficientBalance(parsedUserId, newTransactionAmount))
+        {
+            Message = "Insufficient balance for this transaction.";
+            return;
+        }
+
+        var newTransactionId = Transactions.Any() ? Transactions.Max(t => t.Id) + 1 : 1;
+
         var newTransaction = new TransactionModel
             {
-                Amount = Amount,
-                Type = Enum.Parse<TransactionModel.TransactionType>(TransactionCategory),
-                Tags = allTags.Distinct().ToList(),
-                Source = TransactionMethod.Split(',').ToList(),
-                Notes = TransactionNotes,
+                Id = newTransactionId,
+                UserId = parsedUserId,
+                Title = newTransactionTitle,
+                Amount = newTransactionAmount,
+                Type = Enum.TryParse<TransactionModel.TransactionType>(newTransactionType, out var type) ? type : TransactionModel.TransactionType.Credit,
+                Tags = string.IsNullOrWhiteSpace(newTransactionTags) ? new List<string>() : newTransactionTags.Split(',').Select(tag => tag.Trim()).ToList(),
+                Source = string.IsNullOrWhiteSpace(newTransactionSource) ? new List<string>() : newTransactionSource.Split(',').Select(source => source.Trim()).ToList(),
+                Notes = newTransactionNotes,
                 Date = DateTime.Now
             };
 
-        // Attempt to process the transaction using the service
-        var success = TransactionService.ProcessTransaction(newTransaction, ref CurrentBalance);
+        Transactions.Add(newTransaction);
+        TransactionService.SaveTransactions(Transactions);
 
-        if (success)
-        {
-            StatusMessage = "Transaction has been successfully ";
-        }
-        else
-        {
-            StatusMessage = "Insufficient balance for this transaction.";
-        }
+        Message = "Transaction saved successfully!";
     }
 
-    private void CancelTransaction()
+    private void OnCancel()
     {
-        NavigationManager.NavigateTo("/home");
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 }

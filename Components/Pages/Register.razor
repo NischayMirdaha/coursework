@@ -2,7 +2,6 @@
 @using coursework.Components.Layout
 @layout StartingLayout
 @using coursework.Models
-@using coursework.Services
 @inject UserService UserService
 @inject NavigationManager NavigationManager
 
@@ -44,8 +43,8 @@
                         <input type="password" class="form-control" placeholder="Password" @bind="RegisterPassword" />
                     </div>
                 </div>
-                <button class="btn btn-success w-100" @onclick="PerformRegister">Register</button>
-            </div>
+                <button class="btn btn-success w-100" @onclick="OnRegister">Register</button>
+                </div>
             @if (!string.IsNullOrEmpty(Message))
             {
                 <p class="text-danger text-center mt-3">@Message</p>
@@ -57,26 +56,48 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
 @code {
     private string RegisterUsername = "";
     private string RegisterEmail = "";
     private string RegisterPassword = "";
     private string Message = "";
+    private List<Usermodel> Users = new();
 
-    private async Task PerformRegister()
+    protected override void OnInitialized()
+    {
+        Users = UserService.LoadUsers();
+    }
+
+    private async Task OnRegister()
     {
         if (string.IsNullOrWhiteSpace(RegisterUsername) || string.IsNullOrWhiteSpace(RegisterEmail) || string.IsNullOrWhiteSpace(RegisterPassword))
         {
-            Message = "Please fill in all the fields.";
+            Message = "All fields are required.";
             return;
         }
 
-        // Register the new user
-        UserService.Register(RegisterUsername, RegisterPassword, RegisterEmail);
+        if (Users.Any(u => u.Email == RegisterEmail))
+        {
+            Message = "Email already exists.";
+            return;
+        }
 
-        Message = "Registration successful";
-        await Task.Delay(20000); // Wait for the message to display
-        NavigationManager.NavigateTo("/login"); // Redirect to the login page
+        // Generate a unique ID for the new user
+        var newUserId = Users.Any() ? Users.Max(u => u.Id) + 1 : 1;
+
+        var newUser = new Usermodel
+            {
+                Id = newUserId,
+                Username = RegisterUsername,
+                Email = RegisterEmail,
+                Password = UserService.HashPassword(RegisterPassword)
+            };
+
+        Users.Add(newUser);
+        UserService.SaveUsers(Users);
+        Message = "Successfully Registered!";
+        await Task.Delay(2000);
+        NavigationManager.NavigateTo("/login");
     }
 }
+

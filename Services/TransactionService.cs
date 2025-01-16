@@ -4,8 +4,8 @@ using System.Text.Json;
 public class TransactionService
 {
     private static readonly string DesktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-    private static readonly string FolderPath = Path.Combine(DesktopPath, "Data");
-    private static readonly string FilePath = Path.Combine(FolderPath, "SavedData.json"); // Updated file to store complete AppData
+    private static readonly string FolderPath = Path.Combine(DesktopPath, "LocalDB");
+    private static readonly string FilePath = Path.Combine(FolderPath, "data.json"); // Updated file to store complete AppData
 
     // Load all data (users, debts, transactions) from the JSON file
     public AppData LoadAppData()
@@ -14,7 +14,15 @@ public class TransactionService
             return new AppData();  // Return an empty AppData if the file doesn't exist
 
         var json = File.ReadAllText(FilePath);
-        return JsonSerializer.Deserialize<AppData>(json) ?? new AppData(); // Deserialize into AppData
+        var appData = JsonSerializer.Deserialize<AppData>(json) ?? new AppData();
+
+        // Log the titles of transactions after loading
+        foreach (var transaction in appData.Transactions)
+        {
+            Console.WriteLine($"Loaded transaction with title: {transaction.Title}");
+        }
+
+        return appData;
     }
 
     // Save all data (users, debts, transactions) to the JSON file
@@ -29,75 +37,190 @@ public class TransactionService
         File.WriteAllText(FilePath, json);  // Save AppData to the file
     }
 
-    // Process a transaction and update balance accordingly
-    public bool ProcessTransaction(TransactionModel transaction, ref decimal balance)
+    // Save transaction data
+    public void SaveTransactions(List<TransactionModel> transactions)
     {
-        // Sufficient balance check for outflow transactions
-        if (transaction.Type == TransactionModel.TransactionType.Outflow)
-        {
-            if (transaction.Amount > balance)
-            {
-                Console.WriteLine("Error: Insufficient balance for this transaction.");
-                return false;  // Transaction failed due to insufficient balance
-            }
-        }
+        var appData = LoadAppData(); // Load existing data
+        appData.Transactions = transactions;  // Update the Transactions list
+        SaveAppData(appData);  // Save updated AppData to file
+    }
 
-        // Update the balance after the transaction is processed
-        if (transaction.Type == TransactionModel.TransactionType.Outflow)
-        {
-            balance -= transaction.Amount;  // Deduct the amount for outflow
-        }
-        else if (transaction.Type == TransactionModel.TransactionType.Inflow)
-        {
-            balance += transaction.Amount;  // Add the amount for inflow
-        }
+    // Get all income transactions for a user
+    public List<TransactionModel> GetAllIncomeTransactions(int userId)
+    {
+        // Load the transactions from the data
+        var transactions = LoadAppData().Transactions;
 
-        // Save the updated data
+        // Filter transactions where the UserId matches and the Type is Credit (Income)
+        var incomeTransactions = transactions
+            .Where(t => t.UserId == userId && t.Type == TransactionModel.TransactionType.Credit) // Use enum value for Credit
+            .ToList();
+
+        // Return the filtered list of income transactions
+        return incomeTransactions;
+    }
+
+    // Calculate total income for a user
+    public decimal CalculateTotalIncome(int userId)
+    {
+        var transactions = LoadAppData().Transactions;
+
+        // Filter transactions where the UserId matches and the Type is Credit (income)
+        var incomeTransactions = transactions
+            .Where(t => t.UserId == userId && t.Type == TransactionModel.TransactionType.Credit)
+            .ToList();
+
+        return incomeTransactions.Sum(t => t.Amount);
+    }
+
+    // Calculate total expenses for a user
+    public decimal CalculateTotalExpenses(int userId)
+    {
+        var transactions = LoadAppData().Transactions;
+
+        // Filter transactions where the UserId matches and the Type is Debit (expense)
+        var expenseTransactions = transactions
+            .Where(t => t.UserId == userId && t.Type == TransactionModel.TransactionType.Debit)
+            .ToList();
+
+        return expenseTransactions.Sum(t => t.Amount);
+    }
+
+    // Save transactions for a specific user
+    public void SaveUserTransactions(int userId, List<TransactionModel> transactions)
+    {
         var appData = LoadAppData();
-        appData.Transactions.Add(transaction); // Assuming AppData has a Transactions list to hold transactions
+        var userTransactions = appData.Transactions.Where(t => t.UserId != userId).ToList(); // Exclude user's existing transactions
+        userTransactions.AddRange(transactions); // Add updated transactions for the user
+        appData.Transactions = userTransactions;
         SaveAppData(appData);
-
-        return true;  // Transaction successfully processed
     }
 
-    // Method to add a custom or existing tag to a transaction
-    public void AddTagToTransaction(TransactionModel transaction, string tag)
+    // Get transactions for a specific user
+    public List<TransactionModel> GetUserTransactions(int userId)
     {
-        if (transaction != null && !string.IsNullOrEmpty(tag))
+        var appData = LoadAppData();
+        return appData.Transactions.Where(t => t.UserId == userId).ToList();
+    }
+
+    // Calculate the total number of transactions for a user
+    public int GetTotalTransactions(int userId)
+    {
+        return LoadAppData().Transactions
+            .Where(t => t.UserId == userId)
+            .Count();
+    }
+
+    public bool CheckSufficientBalance(int userId, decimal transactionAmount)
+    {
+        decimal totalIncome = CalculateTotalIncome(userId); // Sum of all credit (income) transactions
+        decimal totalExpenses = CalculateTotalExpenses(userId); // Sum of all debit (expense) transactions
+
+        decimal balance = totalIncome - totalExpenses;
+
+        return balance >= transactionAmount; // Check if balance is enough for the transaction
+    }
+
+    public List<TransactionModel> FilterTransactions(int userId, string? type = null, List<string>? tags = null, DateTime? exactDate = null)
+    {
+        var transactions = LoadAppData().Transactions
+            .Where(t => t.UserId == userId);
+
+        // Filter by type (Credit/Debit)
+        if (!string.IsNullOrEmpty(type))
         {
-            transaction.AddTag(tag);  // Use the AddTag method from TransactionModel
-            var appData = LoadAppData();
-            appData.Transactions.Add(transaction);  // Add updated transaction back to AppData
-            SaveAppData(appData);  // Save the updated data
+            transactions = transactions.Where(t => t.Type.ToString().Equals(type, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Filter by tags
+        if (tags != null && tags.Any())
+        {
+            transactions = transactions.Where(t => t.Tags != null && t.Tags.Intersect(tags).Any());
+        }
+
+        // Filter by exact date
+        if (exactDate.HasValue)
+        {
+            transactions = transactions.Where(t => t.Date.Date == exactDate.Value.Date); // Comparing only the date part
+        }
+
+        return transactions.ToList();
+    }
+
+    public TransactionModel GetHighIncome(int userId)
+    {
+        return LoadAppData().Transactions
+            .Where(t => t.UserId == userId && t.Type == TransactionModel.TransactionType.Credit)
+            .OrderByDescending(t => t.Amount)
+            .FirstOrDefault();
+    }
+
+    // Get lowest income for a user
+    public TransactionModel GetLowIncome(int userId)
+    {
+        return LoadAppData().Transactions
+            .Where(t => t.UserId == userId && t.Type == TransactionModel.TransactionType.Credit)
+            .OrderBy(t => t.Amount)
+            .FirstOrDefault();
+    }
+
+    // Get highest expense for a user
+    public TransactionModel GetHighExpense(int userId)
+    {
+        return LoadAppData().Transactions
+            .Where(t => t.UserId == userId && t.Type == TransactionModel.TransactionType.Debit)
+            .OrderByDescending(t => t.Amount)
+            .FirstOrDefault();
+    }
+
+    // Get lowest expense for a user
+    public TransactionModel GetLowExpense(int userId)
+    {
+        return LoadAppData().Transactions
+            .Where(t => t.UserId == userId && t.Type == TransactionModel.TransactionType.Debit)
+            .OrderBy(t => t.Amount)
+            .FirstOrDefault();
+    }
+
+    public List<TransactionModel> SortTransactionsByTransactionDate(List<TransactionModel> transactions, bool ascending = true)
+    {
+        if (ascending)
+        {
+            return transactions.OrderBy(t => t.Date).ToList();
+        }
+        else
+        {
+            return transactions.OrderByDescending(t => t.Date).ToList();
         }
     }
 
-    // Method to remove a tag from a transaction
-    public void RemoveTagFromTransaction(TransactionModel transaction, string tag)
+    public List<TransactionModel> FindTransactionsByTitle(int userId, string searchTitle)
     {
-        if (transaction != null && !string.IsNullOrEmpty(tag))
-        {
-            transaction.RemoveTag(tag);  // Use the RemoveTag method from TransactionModel
-            var appData = LoadAppData();
-            appData.Transactions.Add(transaction);  // Add updated transaction back to AppData
-            SaveAppData(appData);  // Save the updated data
-        }
-    }
-  
-
-
-    // Method to filter transactions by type, tags, and date range
-    public List<TransactionModel> FilterTransactions(
-        TransactionModel.TransactionType? type = null,
-        List<string> tags = null,
-        DateTime? startDate = null,
-        DateTime? endDate = null)
-    {
-        var appData = LoadAppData();  // Load the latest AppData
-        return appData.Transactions
-            .Where(t => !type.HasValue || t.Type == type)
-            .Where(t => tags == null || tags.All(tag => t.Tags.Contains(tag)))
-            .Where(t => (!startDate.HasValue || t.Date >= startDate) && (!endDate.HasValue || t.Date <= endDate))
+        return LoadAppData().Transactions
+            .Where(t => t.UserId == userId &&
+                        !string.IsNullOrEmpty(t.Title) &&
+                        t.Title.Contains(searchTitle, StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
+
+    public List<TransactionModel> FilterTransactionsByDate(List<TransactionModel> transactions, DateTime startDate, DateTime endDate, bool ascending = true)
+    {
+        // Filter the transactions based on the date range
+        var filteredTransactions = transactions
+            .Where(t => t.Date >= startDate && t.Date <= endDate)
+            .ToList();
+
+        // Order the filtered transactions based on the specified order (ascending or descending)
+        if (ascending)
+        {
+            return filteredTransactions.OrderBy(t => t.Date).ToList();
+        }
+        else
+        {
+            return filteredTransactions.OrderByDescending(t => t.Date).ToList();
+        }
+    }
+
+
+
 }

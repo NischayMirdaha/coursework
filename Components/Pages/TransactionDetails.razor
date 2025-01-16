@@ -1,0 +1,189 @@
+﻿@page "/transactionDetails"
+@using coursework.Models
+@inject TransactionService TransactionService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+<section class="min-h-screen bg-gray-100 p-8">
+    <div class="max-w-7xl mx-auto">
+        <h2 class="text-center text-4xl font-bold mb-8 text-gray-800">
+            User Transactions
+        </h2>
+
+        <!-- Filter Section -->
+        <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">Filter Transactions</h3>
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div class="flex flex-col">
+                    <label class="text-sm font-medium text-gray-600 mb-2">Search by Tags</label>
+                    <input type="text" class="form-input" placeholder="e.g., food, travel" @bind="SearchTags" />
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-sm font-medium text-gray-600 mb-2">Transaction Type</label>
+                    <select class="form-select" @bind="SelectedType">
+                        <option value="">All Types</option>
+                        <option value="Credit">Credit</option>
+                        <option value="Debit">Debit</option>
+                    </select>
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-sm font-medium text-gray-600 mb-2">Exact Date</label>
+                    <input type="date" class="form-input" @bind="ExactDate" />
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-sm font-medium text-gray-600 mb-2">Search by Title</label>
+                    <input type="text" class="form-input" placeholder="e.g., Rent Payment" @bind="SearchTitle" />
+                </div>
+            </div>
+            <div class="flex justify-start mt-6 space-x-4">
+                <button class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-transform duration-200"
+                        @onclick="ApplyFilters">
+                    Search
+                </button>
+                <button class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-transform duration-200"
+                        @onclick="SortTransactionsByDate">
+                    Sort by Date
+                </button>
+            </div>
+        </div>
+
+        <!-- Transactions Section -->
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <table class="min-w-full table-auto">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Id </th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Tags</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @if (FilteredTransactions.Any())
+                    {
+                        foreach (var transaction in FilteredTransactions)
+                        {
+                            <tr class="hover:bg-gray-100 transition-all">
+                                <td class="px-6 py-4 text-sm text-gray-700">@transaction.Id</td>
+
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">@transaction.Type</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">$@transaction.Amount.ToString("F2")</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">@transaction.Date.ToString("yyyy-MM-dd")</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">@string.Join(", ", transaction.Tags ?? new List<string>())</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">No transactions match the filters.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* General Layout Styling */
+    body {
+        font-family: 'Arial', sans-serif;
+    }
+
+    section {
+        background-color: #f9fafb;
+        padding: 2rem;
+    }
+
+    .form-input, .form-select {
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 0.75rem;
+        width: 100%;
+        font-size: 0.875rem;
+        color: #4b5563;
+    }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        text-align: left;
+        padding: 0.75rem 1.5rem;
+    }
+
+    th {
+        background-color: #f3f4f6;
+        font-weight: 600;
+    }
+
+    tr:hover td {
+        background-color: cornflowerblue;
+    }
+
+    button {
+        transition: all 0.2s ease-in-out;
+        background-color: hotpink;
+    }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: cornflowerblue;
+        }
+</style>
+@code {
+    private List<TransactionModel> UserTransactions = new();
+    private List<TransactionModel> FilteredTransactions = new();
+
+    private string SearchTags { get; set; } = string.Empty;
+    private string SelectedType { get; set; } = string.Empty;
+    private DateTime? ExactDate { get; set; } = null;
+    private string SearchTitle { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userId");
+        if (int.TryParse(userId, out var parsedUserId))
+        {
+            UserTransactions = TransactionService.GetUserTransactions(parsedUserId);
+            FilteredTransactions = new List<TransactionModel>(UserTransactions);
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Invalid User ID found in localStorage.");
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var tags = SearchTags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+        if (!string.IsNullOrEmpty(SearchTitle))
+        {
+            FilteredTransactions = TransactionService.FindTransactionsByTitle(UserTransactions.First().UserId, SearchTitle);
+        }
+        else
+        {
+            FilteredTransactions = TransactionService.FilterTransactions(
+                UserTransactions.First().UserId,
+                SelectedType,
+                tags,
+                ExactDate
+            );
+        }
+    }
+
+    private void SortTransactionsByDate()
+    {
+        FilteredTransactions = TransactionService.SortTransactionsByTransactionDate(FilteredTransactions, ascending: true);
+    }
+}
